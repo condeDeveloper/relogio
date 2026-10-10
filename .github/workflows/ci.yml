@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.so }}
+
+    # bash nos tres sistemas: no Windows o shell padrao e o PowerShell, e ele
+    # desmonta "-Dexec.args=..." em dois argumentos antes de o Maven ver.
+    defaults:
+      run:
+        shell: bash
+
+    strategy:
+      fail-fast: false
+      matrix:
+        so: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Testes
+        run: mvn -B -ntp verify
+
+      - name: o que cada relogio acerta e erra
+        run: mvn -B -ntp -q exec:java -Dexec.args="ordem"
+
+      - name: a inversao de causa e efeito do relogio fisico
+        run: mvn -B -ntp -q exec:java -Dexec.args="inversao"
+
+      - name: quanto de concorrencia ha de verdade
+        run: mvn -B -ntp -q exec:java -Dexec.args="concorrencia"
+
+      - name: o tamanho de cada relogio
+        run: mvn -B -ntp -q exec:java -Dexec.args="tamanho"
+
+      - name: o que acontece quando os processos crescem
+        run: mvn -B -ntp -q exec:java -Dexec.args="escala"
+
+      - name: Relatorios de teste
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports-${{ matrix.so }}
+          path: target/surefire-reports
